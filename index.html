@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบขอทำงานกับ 0นนท์ — สฟ. (Firebase)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- ================= LOGIN ================= -->
+<div class="login-wrap" id="loginPage">
+  <div class="login-card">
+    <div class="login-icon">
+      <div class="pic-top"><img src="assets/image-1.jpg" alt="SF6 Filter"/></div>
+
+    </div>
+    <h1>SF6Flow – SF6 Gas Management System</h1>
+    <p class="login-sub">Zero Waste to Landfill SF6 by CROD</p>
+
+    <div class="login-err" id="loginErr">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+    <div class="field">
+      <label>ชื่อผู้ใช้ (Username)</label>
+      <input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>รหัสผ่าน (Password)</label>
+      <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">🔑 เข้าสู่ระบบ</button>
+    <div class="demo-box demo-photo">
+      <img src="assets/image-2.jpg" alt="ทีมงาน" />
+    </div>
+    <div class="fb-status"><span class="fb-dot" id="fbDot"></span><span id="fbStatusText">กำลังเชื่อมต่อ Firebase…</span></div>
+    <div class="fb-credit">แนะนำพัฒนาที่ ระดมบุญ 0644651555</div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app" id="appPage">
+  <div class="topbar">
+    <div class="brand"><span class="dot">⚡</span> ระบบขอทำงานกับ 0นนท์ สฟ.</div>
+    <div class="spacer"></div>
+    <div class="user-chip">
+      <div class="avatar" id="uAvatar">A</div>
+      <div>
+        <div class="name" id="uName">-</div>
+        <div class="role" id="uRole">-</div>
+      </div>
+    </div>
+    <button class="btn-ghost" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-view="dash" onclick="switchTab('dash')">📋 ใบรายการขอทำงาน</button>
+    <button class="tab" data-view="members" id="memberTab" style="display:none" onclick="switchTab('members')">👥 สมาชิก</button>
+    <button class="tab" data-view="log" id="logTab" style="display:none" onclick="switchTab('log')">📜 Log การใช้งาน</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="panel" id="viewDash">
+    <div class="panel-head">
+      <h2>รายการใบขอทำงาน</h2>
+      <span class="count-pill" id="countPill">0 รายการ</span>
+      <div class="spacer"></div>
+      <input class="search" id="searchBox" placeholder="🔍 ค้นหา ชื่อใบรายการ / สฟ. / ชื่อผู้ขอ" oninput="renderTable()">
+      <button class="btn-new" onclick="openCreate()">＋ สร้างใบรายการ</button>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:#FFB3B3"></i> หน่วยงานสร้างใบรายการ</span>
+      <span><i class="swatch" style="background:var(--peach-deep)"></i> ศูนย์นนทบุรีอนุมัติ</span>
+      <span><i class="swatch" style="background:var(--mint-deep)"></i> ทำงานเสร็จ ปิดงานแล้ว</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ชื่อใบรายการ</th><th>วันที่/เวลาสร้าง</th><th>ผู้ขอทำงาน</th>
+            <th>สฟ.ที่ทำงาน</th><th>อุปกรณ์ที่ต้อง OFF</th><th>สถานะ</th><th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="emptyState" style="display:none">
+        <div class="big">🌸</div>
+        ยังไม่มีใบรายการ — กดปุ่ม "＋ สร้างใบรายการ" เพื่อเริ่มต้น
+      </div>
+    </div>
+  </div>
+
+  <!-- Members (admin only) -->
+  <div class="panel" id="viewMembers" style="display:none">
+    <div class="panel-head">
+      <h2>จัดการสมาชิก</h2>
+      <span class="count-pill" id="memberCount">0 บัญชี</span>
+      <div class="spacer"></div>
+      <button class="btn-new" onclick="openAddMember()">＋ เพิ่มสมาชิก</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Username</th><th>ชื่อที่แสดง</th><th>รหัสผ่าน</th><th>ประเภทผู้ใช้</th><th>สร้างเมื่อ</th><th>จัดการ</th></tr>
+        </thead>
+        <tbody id="memberBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="panel" id="viewLog" style="display:none">
+    <div class="panel-head">
+      <h2>Log การใช้งานระบบ</h2>
+      <span class="count-pill" id="logCount">0 รายการ</span>
+      <div class="spacer"></div>
+      <button class="icon-btn" onclick="renderLog()">🔄 รีเฟรช</button>
+    </div>
+    <div class="table-wrap">
+      <table class="log-table">
+        <thead>
+          <tr><th>วันที่/เวลา</th><th>ผู้ใช้งาน</th><th>ประเภทผู้ใช้</th><th>การกระทำ</th><th>รายละเอียด</th></tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+      <div class="empty" id="logEmpty" style="display:none"><div class="big">📜</div>ยังไม่มีบันทึกการใช้งาน</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= FORM MODAL ================= -->
+<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <button class="x" onclick="closeModal('formOverlay')">✕</button>
+    <h3 id="formTitle">สร้างใบรายการขอทำงาน</h3>
+    <p class="sub" id="formMeta"></p>
+    <div class="grid2">
+      <div class="field">
+        <label>รหัสพนักงาน (เลข 6 ตัว)</label>
+        <input id="f_emp" maxlength="6" inputmode="numeric">
+        <div class="err-msg">กรุณากรอกตัวเลข 6 หลัก</div>
+      </div>
+      <div class="field">
+        <label>ชื่อ-นามสกุล</label>
+        <input id="f_name">
+        <div class="err-msg">กรุณากรอกชื่อ-นามสกุล</div>
+      </div>
+      <div class="field">
+        <label>เบอร์มือถือ (เลข 10 ตัว)</label>
+        <input id="f_phone" maxlength="10" inputmode="numeric">
+        <div class="err-msg">กรุณากรอกตัวเลข 10 หลัก</div>
+      </div>
+      <div class="field">
+        <label>แผนก</label>
+        <input id="f_dept">
+        <div class="err-msg">กรุณากรอกแผนก</div>
+      </div>
+      <div class="field">
+        <label>กอง</label>
+        <input id="f_div">
+        <div class="err-msg">กรุณากรอกกอง</div>
+      </div>
+      <div class="field">
+        <label>ฝ่าย</label>
+        <input id="f_sect">
+        <div class="err-msg">กรุณากรอกฝ่าย</div>
+      </div>
+      <div class="field">
+        <label>สฟ.ที่ทำงาน (ตัวพิมพ์ใหญ่ภาษาอังกฤษ)</label>
+        <input id="f_sub" style="text-transform:uppercase">
+        <div class="err-msg">กรุณากรอก สฟ.ที่ทำงาน</div>
+      </div>
+      <div class="field">
+        <label>อุปกรณ์ที่ต้อง OFF</label>
+        <input id="f_off">
+        <div class="err-msg">กรุณากรอกอุปกรณ์ที่ต้อง OFF</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>รายละเอียดการทำงาน (ทำอะไรบ้าง)</label>
+      <textarea id="f_detail" rows="3"></textarea>
+      <div class="err-msg">กรุณากรอกรายละเอียดการทำงาน</div>
+    </div>
+    <div class="field">
+      <label>สาเหตุการทำงาน</label>
+      <input id="f_reason">
+    </div>
+    <div class="field">
+      <label>คาดการณ์เวลาทำงานเสร็จ</label>
+      <div class="eta-radio-group" id="etaRadioGroup">
+        <label class="eta-radio"><input type="radio" name="f_eta_radio" value="unknown"> ไม่สามารถบอกเวลาได้</label>
+        <label class="eta-radio"><input type="radio" name="f_eta_radio" value="1h"> 1 ชม.</label>
+        <label class="eta-radio"><input type="radio" name="f_eta_radio" value="2h"> 2 ชม.</label>
+        <label class="eta-radio"><input type="radio" name="f_eta_radio" value="3h"> 3 ชม.</label>
+      </div>
+      <div class="err-msg">กรุณาเลือกวันเวลาที่คาดว่าจะเสร็จ</div>
+    </div>
+    <div class="field">
+      <label>วันที่/เวลาสร้างใบรายการ</label>
+      <input id="f_created" disabled style="background:#F3F1FA;color:var(--ink-soft)">
+      <div class="hint">บันทึกอัตโนมัติจากเวลาปัจจุบัน</div>
+    </div>
+
+    <div id="approvalSection" style="display:none">
+      <div class="approval-box">
+        <div class="approval-title">🧡 ข้อมูลการอนุมัติ</div>
+        <div class="grid2">
+          <div class="field">
+            <label>ผู้อนุมัติ</label>
+            <input id="f_approver">
+            <div class="err-msg">กรุณากรอกชื่อผู้อนุมัติ</div>
+          </div>
+          <div class="field">
+            <label>ชื่อ Operator</label>
+            <input id="f_operator">
+            <div class="err-msg">กรุณากรอกชื่อ Operator</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-clear" onclick="clearForm()">🧹 Clear</button>
+      <button class="btn btn-soft" onclick="closeModal('formOverlay')">ยกเลิก</button>
+      <button class="btn btn-primary" style="width:auto;background:linear-gradient(135deg,#FFAE5C,var(--peach-deep));display:none" id="formApproveBtn" onclick="approveFromForm()" disabled>✔ อนุมัติ</button>
+      <button class="btn btn-primary" style="width:auto" id="formSaveBtn" onclick="saveForm()">💾 บันทึกใบรายการ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DETAIL MODAL ================= -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal">
+    <button class="x" onclick="closeModal('detailOverlay')">✕</button>
+    <h3 id="dTitle">รายละเอียดใบรายการ</h3>
+    <p class="sub" id="dBadgeLine"></p>
+    <div class="detail-grid" id="dGrid"></div>
+    <div class="close-info-box" id="dCloseBox" style="display:none"></div>
+    <div class="timeline" id="dTimeline"></div>
+  </div>
+</div>
+
+<!-- ================= CLOSE-JOB MODAL ================= -->
+<div class="overlay" id="closeOverlay">
+  <div class="modal" style="max-width:520px">
+    <button class="x" onclick="closeModal('closeOverlay')">✕</button>
+    <h3>ปิดงาน — บันทึกข้อมูลทำงานเสร็จ</h3>
+    <p class="sub" id="closeMeta"></p>
+    <div class="field">
+      <label>ผลการทำงาน / สรุปการปิดงาน <span class="req">*</span></label>
+      <textarea id="c_result" rows="3" placeholder="เช่น เปลี่ยนอุปกรณ์เรียบร้อย ทดสอบจ่ายไฟปกติ"></textarea>
+      <div class="err-msg">กรุณากรอกผลการทำงาน</div>
+    </div>
+    <div class="field">
+      <label>วันที่/เวลาทำงานเสร็จจริง <span class="req">*</span></label>
+      <input id="c_finish" type="datetime-local">
+      <div class="err-msg">กรุณาเลือกวันเวลาที่ทำงานเสร็จ</div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-soft" onclick="closeModal('closeOverlay')">ยกเลิก</button>
+      <button class="btn btn-primary" style="width:auto;background:linear-gradient(135deg,#5FC98B,var(--mint-deep))" onclick="saveClose()">✅ ยืนยันปิดงาน</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MEMBER MODAL ================= -->
+<div class="overlay" id="memberOverlay">
+  <div class="modal" style="max-width:480px">
+    <button class="x" onclick="closeModal('memberOverlay')">✕</button>
+    <h3 id="memberTitle">เพิ่มสมาชิกใหม่</h3>
+    <p class="sub" id="memberSub">ข้อมูลจะถูกบันทึกในฐานข้อมูล Firebase</p>
+    <div class="field">
+      <label>Username <span class="req">*</span></label>
+      <input id="m_user" placeholder="อังกฤษ/ตัวเลข 3 ตัวขึ้นไป" autocomplete="off">
+      <div class="err-msg">กรุณากรอก a-z, 0-9 อย่างน้อย 3 ตัว และต้องไม่ซ้ำ</div>
+    </div>
+    <div class="field">
+      <label>รหัสผ่าน <span class="req">*</span></label>
+      <input id="m_pass" type="text" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="off">
+      <div class="err-msg">กรุณากรอกรหัสผ่านอย่างน้อย 6 ตัวอักษร</div>
+    </div>
+    <div class="field">
+      <label>ชื่อที่แสดง <span class="req">*</span></label>
+      <input id="m_name" placeholder="เช่น ศูนย์นนทบุรี (กะเช้า)">
+      <div class="err-msg">กรุณากรอกชื่อที่แสดง</div>
+    </div>
+    <div class="field">
+      <label>ประเภทผู้ใช้ <span class="req">*</span></label>
+      <select id="m_role">
+        <option value="unit">หน่วยงาน — สร้าง แก้ไข ปิดงาน</option>
+        <option value="center">ศูนย์นนทบุรี — สร้าง แก้ไข อนุมัติ</option>
+        <option value="admin">ผู้ดูแลระบบ — ทุกสิทธิ์ + ดู Log</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="btn btn-soft" onclick="closeModal('memberOverlay')">ยกเลิก</button>
+      <button class="btn btn-primary" style="width:auto" onclick="saveMember()">💾 บันทึกสมาชิก</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./firebase-config.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
