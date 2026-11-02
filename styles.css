@@ -21,7 +21,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{
-  font-family:'IBM Plex Sans Thai Looped',sans-serif;
+  font-family:'Noto Sans Thai',Tahoma,sans-serif;
   background:
     radial-gradient(600px 300px at 8% -5%, rgba(255,183,201,.28), transparent 60%),
     radial-gradient(700px 350px at 95% 0%, rgba(157,140,255,.22), transparent 60%),
@@ -29,7 +29,7 @@ body{
     var(--bg);
   min-height:100vh;color:var(--ink);
 }
-h1,h2,h3,.brand{font-family:'Mali',cursive}
+h1,h2,h3,.brand{font-family:inherit}
 button{font-family:inherit;cursor:pointer;border:none}
 input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
 
