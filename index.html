@@ -6,7 +6,7 @@
 <title>ระบบขอทำงานกับ 0นนท์ — สฟ. (Firebase)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -59,6 +59,7 @@
   </div>
 
   <div class="tabs" id="tabs">
+    <button type="button" class="tab" id="homeBtn" onclick="switchTab('dash')" title="กลับไปหน้าใบรายการขอทำงาน">🏠 ไปหน้าหลัก</button>
     <button class="tab active" data-view="dash" onclick="switchTab('dash')">📋 ใบรายการขอทำงาน</button>
     <button class="tab" data-view="members" id="memberTab" style="display:none" onclick="switchTab('members')">👥 สมาชิก</button>
     <button class="tab" data-view="log" id="logTab" style="display:none" onclick="switchTab('log')">📜 Log การใช้งาน</button>
